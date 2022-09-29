@@ -13,7 +13,7 @@
 #define FEATURE_NEOPIXELS   1   // Enable neopixel display
 #define FEATURE_DISPLAY     0   // Enable character display
 #define FEATURE_KEYPAD      0   // Enable Wiegand keypad for PIN entry
-#define FEATURE_PUSHOVER    0   // Enable Pushover messages (Requires WiFi)
+#define FEATURE_PUSHOVER    1   // Enable Pushover messages (Requires WiFi)
 
 
 /* GPIO config */

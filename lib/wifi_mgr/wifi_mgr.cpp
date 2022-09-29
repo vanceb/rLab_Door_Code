@@ -26,8 +26,8 @@
    can not be read by observers.
  *****************************************************************************************************************************/
 
+//#include <hardware.h>
 #include <wifi_mgr.h>
-#include <hardware.h>
 
 #include <esp_wifi.h>
 #include <WiFi.h>
@@ -365,6 +365,7 @@ void saveWifiConfig()
     }
 }
 
+#if FEATURE_PUSHOVER
 bool loadPushoverConfig() 
 {
   // this opens the config file in read-mode
@@ -400,7 +401,7 @@ bool loadPushoverConfig()
       return false;
     }
     
-    serializeJson(json, Serial);
+//    serializeJson(json, Serial);
     
 #else
 
@@ -415,7 +416,7 @@ bool loadPushoverConfig()
       return false;
     }
     
-    json.printTo(Serial);
+//    json.printTo(Serial);
     
 #endif
 
@@ -437,7 +438,7 @@ bool loadPushoverConfig()
     }
   }
   
-  Serial.println(F("\nConfig File successfully parsed"));
+  log_i("Pushover config:\n %s %s %s", custom_PUSHOVER_API_URL, custom_PUSHOVER_USERKEY, custom_PUSHOVER_API_KEY);
   
   return true;
 }
@@ -482,9 +483,11 @@ bool savePushoverConfig()
   log_i("Pushover Config File successfully saved");
   return true;
 }
+#endif //FEATURE_PUSHOVER
 
 void etask_wifi_mgr(void *parameters)
 {
+#if FEATURE_WIFI
     log_i("Starting SPIFFS");
     if (FORMAT_FILESYSTEM)
     {
@@ -568,6 +571,7 @@ void etask_wifi_mgr(void *parameters)
         }
     }
 
+#if FEATURE_PUSHOVER
     // Extra parameters to be configured for Pushover configuration
     // After connecting, parameter.getValue() will get you the configured value
     // Format: <ID> <Placeholder text> <default value> <length> <custom HTML> <label placement>
@@ -585,6 +589,7 @@ void etask_wifi_mgr(void *parameters)
     ESP_wifiManager.addParameter(&PUSHOVER_API_URL_FIELD);
     ESP_wifiManager.addParameter(&PUSHOVER_USERKEY_FIELD);
     ESP_wifiManager.addParameter(&PUSHOVER_API_KEY_FIELD);
+#endif // FEATURE_PUSHOVER
 
     if (start_portal)
     {
@@ -650,6 +655,7 @@ void etask_wifi_mgr(void *parameters)
         ESP_wifiManager.getSTAStaticIPConfig(WM_STA_IPconfig);
         saveWifiConfig();
 
+#if FEATURE_PUSHOVER
         // Getting posted form values and overriding local variables parameters
         // Config file is written regardless the connection state
         strcpy(custom_PUSHOVER_API_URL, PUSHOVER_API_URL_FIELD.getValue());
@@ -658,6 +664,7 @@ void etask_wifi_mgr(void *parameters)
 
         // Writing Pushover to JSON config file on flash for next boot
         savePushoverConfig();
+#endif // FEATURE_PUSHOVER
 
     }
     else
@@ -666,8 +673,9 @@ void etask_wifi_mgr(void *parameters)
         // Load stored data, the addAP ready for MultiWiFi reconnection
         if (!configDataLoaded)
             loadWifiConfig();
+#if FEATURE_PUSHOVER
             loadPushoverConfig();
-
+#endif //FEATURE_PUSHOVER
         for (uint8_t i = 0; i < NUM_WIFI_CREDENTIALS; i++)
         {
             // Don't permit NULL SSID and password len < MIN_AP_PASSWORD_SIZE (8)
@@ -701,11 +709,13 @@ void etask_wifi_mgr(void *parameters)
         log_i("Connected. Local IP: %s", WiFi.localIP().toString().c_str());
     else
         log_e("Not connected to WiFi!");
-
+#endif  // FEATURE_WIFI
     for (;;)
     {
         // put your main code here, to run repeatedly
+#if FEATURE_WIFI
         check_status();
+#endif  // FEATURE_WIFI
         delay(100);
     }
 }

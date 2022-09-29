@@ -2,6 +2,7 @@
 #define WIFI_MGR_H
 
 #include <Arduino.h>
+#include <hardware.h>
 
 #define WIFI_MGR_DEBUG          1
 #define WIFI_MGR_RESET          0
@@ -20,8 +21,8 @@
 #define NUM_WIFI_CREDENTIALS    1
 
 // Assuming max 490 chars
-#define TZNAME_MAX_LEN          49
-#define TIMEZONE_MAX_LEN        49
+#define TZNAME_MAX_LEN          50
+#define TIMEZONE_MAX_LEN        50
 
 // Use false if you don't like to display Available Pages in Information Page of Config Portal
 // Comment out or use true to display Available Pages in Information Page of Config Portal
@@ -57,7 +58,9 @@
 // New in v1.0.11
 #define USING_CORS_FEATURE          true
 
+#if FEATURE_PUSHOVER
 /* Pushover */
+
 /* Default values */
 #define PUSHOVER_CONFIG_FILE        "/pushover.json"
 #define PUSHOVER_API_URL            "https://api.pushover.net/1/messages.json"
@@ -78,6 +81,7 @@ extern char custom_PUSHOVER_API_URL[custom_PUSHOVER_API_URL_LEN];
 extern char custom_PUSHOVER_USERKEY[custom_PUSHOVER_API_KEY_LEN];
 extern char custom_PUSHOVER_API_KEY[custom_PUSHOVER_USERKEY_LEN];
 
+#endif //FEATURE_PUSHOVER
 
 void etask_wifi_mgr (void * parameters);
 
