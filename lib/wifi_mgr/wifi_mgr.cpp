@@ -32,6 +32,7 @@
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
+#include <ArduinoJson.h>
 
 // From v1.1.0
 #include <WiFiMulti.h>
@@ -41,9 +42,14 @@ WiFiMulti wifiMulti;
 
 /* Use SPIFFS for storing config data */
 #include <SPIFFS.h>
-FS* filesystem =      &SPIFFS;
-#define FileFS        SPIFFS
-#define FS_Name       "SPIFFS"
+FS *filesystem = &SPIFFS;
+#define FileFS SPIFFS
+#define FS_Name "SPIFFS"
+
+/* Pushover - Variables to be populated from config settings */
+char custom_PUSHOVER_API_URL[40];
+char custom_PUSHOVER_USERKEY[32];
+char custom_PUSHOVER_API_KEY[32];
 
 typedef struct
 {
@@ -152,13 +158,13 @@ uint8_t connectMultiWiFi()
     uint8_t status;
 
     log_i("ConnectMultiWiFi with :");
-/*
-    if ((Router_SSID != "") && (Router_Pass != ""))
-    {
-        log_i("Flash credentials found: SSID: %s", Router_SSID);
-        wifiMulti.addAP(Router_SSID.c_str(), Router_Pass.c_str());
-    }
-*/
+    /*
+        if ((Router_SSID != "") && (Router_Pass != ""))
+        {
+            log_i("Flash credentials found: SSID: %s", Router_SSID);
+            wifiMulti.addAP(Router_SSID.c_str(), Router_Pass.c_str());
+        }
+    */
     for (uint8_t i = 0; i < NUM_WIFI_CREDENTIALS; i++)
     {
         // Don't permit NULL SSID and password len < MIN_AP_PASSWORD_SIZE (8)
@@ -188,9 +194,11 @@ uint8_t connectMultiWiFi()
         log_i("WiFi connected: ");
         log_i("SSID: %s, RSSI: %d", WiFi.SSID(), WiFi.RSSI());
         log_i("Channel: %d, IP: %s", WiFi.channel(), WiFi.localIP().toString().c_str());
-    } else {
+    }
+    else
+    {
         log_e("WiFi not connected");
-//        ESP.restart();
+        //        ESP.restart();
     }
     return status;
 }
@@ -208,10 +216,11 @@ void printLocalTime()
     if (timeinfo.tm_year > 100)
     {
         log_i("Local Date/Time: %s", asctime(&timeinfo));
-    } else {
+    }
+    else
+    {
         log_e("NTP time not set");
     }
-
 }
 
 #endif
@@ -293,7 +302,7 @@ int calcChecksum(uint8_t *address, uint16_t sizeToCalc)
     return checkSum;
 }
 
-bool loadConfigData()
+bool loadWifiConfig()
 {
     log_i("Loading config file from SPIFFS");
     File file = FileFS.open(CONFIG_FILENAME, "r");
@@ -330,7 +339,7 @@ bool loadConfigData()
     }
 }
 
-void saveConfigData()
+void saveWifiConfig()
 {
     File file = FileFS.open(CONFIG_FILENAME, "w");
     log_i("Saving config file to SPIFFS");
@@ -356,6 +365,124 @@ void saveConfigData()
     }
 }
 
+bool loadPushoverConfig() 
+{
+  // this opens the config file in read-mode
+  File f = FileFS.open(PUSHOVER_CONFIG_FILE, "r");
+
+  if (!f)
+  {
+    log_e("Config File not found");
+    return false;
+  }
+  else
+  {
+    // we could open the file
+    size_t size = f.size();
+    // Allocate a buffer to store contents of the file.
+    std::unique_ptr<char[]> buf(new char[size + 1]);
+
+    // Read and store file contents in buf
+    f.readBytes(buf.get(), size);
+    // Closing file
+    f.close();
+    // Using dynamic JSON buffer which is not the recommended memory model, but anyway
+    // See https://github.com/bblanchon/ArduinoJson/wiki/Memory%20model
+
+#if (ARDUINOJSON_VERSION_MAJOR >= 6)
+
+    DynamicJsonDocument json(1024);
+    auto deserializeError = deserializeJson(json, buf.get());
+    
+    if ( deserializeError )
+    {
+      log_e("JSON parseObject() failed");
+      return false;
+    }
+    
+    serializeJson(json, Serial);
+    
+#else
+
+    DynamicJsonBuffer jsonBuffer;
+    // Parse JSON string
+    JsonObject& json = jsonBuffer.parseObject(buf.get());
+    
+    // Test if parsing succeeds.
+    if (!json.success())
+    {
+      Serial.println(F("JSON parseObject() failed"));
+      return false;
+    }
+    
+    json.printTo(Serial);
+    
+#endif
+
+    // Parse all config file parameters, override
+    // local config variables with parsed values
+    if (json.containsKey(PUSHOVER_API_URL_Label))
+    {
+      strcpy(custom_PUSHOVER_API_URL, json[PUSHOVER_API_URL_Label]);
+    }
+
+    if (json.containsKey(PUSHOVER_USERKEY_Label))
+    {
+      strcpy(custom_PUSHOVER_USERKEY, json[PUSHOVER_USERKEY_Label]);
+    }
+
+    if (json.containsKey(PUSHOVER_API_KEY_Label))
+    {
+      strcpy(custom_PUSHOVER_API_KEY, json[PUSHOVER_API_KEY_Label]);
+    }
+  }
+  
+  Serial.println(F("\nConfig File successfully parsed"));
+  
+  return true;
+}
+
+bool savePushoverConfig() 
+{
+  log_i("Saving Pushover Config File");
+
+#if (ARDUINOJSON_VERSION_MAJOR >= 6)
+  DynamicJsonDocument json(1024);
+#else
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+#endif
+
+  // JSONify local configuration parameters
+  json[PUSHOVER_API_URL_Label] = custom_PUSHOVER_API_URL;
+  json[PUSHOVER_USERKEY_Label] = custom_PUSHOVER_USERKEY;
+  json[PUSHOVER_API_KEY_Label] = custom_PUSHOVER_API_KEY;
+
+  // Open file for writing
+  File f = FileFS.open(PUSHOVER_CONFIG_FILE, "w");
+
+  if (!f)
+  {
+    log_e("Failed to open Config File for writing");
+    return false;
+  }
+
+#if (ARDUINOJSON_VERSION_MAJOR >= 6)
+  serializeJsonPretty(json, Serial);
+  // Write data to file and close it
+  serializeJson(json, f);
+#else
+  json.prettyPrintTo(Serial);
+  // Write data to file and close it
+  json.printTo(f);
+#endif
+
+  f.close();
+
+  log_i("Pushover Config File successfully saved");
+  return true;
+}
+
 void etask_wifi_mgr(void *parameters)
 {
     log_i("Starting SPIFFS");
@@ -378,7 +505,9 @@ void etask_wifi_mgr(void *parameters)
                 delay(1000);
             }
         }
-    } else {
+    }
+    else
+    {
         log_i("Successfully mounted SPIFFS");
     }
 
@@ -419,20 +548,43 @@ void etask_wifi_mgr(void *parameters)
     bool configDataLoaded = false;
 
     /* Decide whether to start the config portal */
-    if (digitalRead(GPIO_TAMPER)) {
+    if (digitalRead(GPIO_TAMPER))
+    {
         /* Case is open so start portal */
         start_portal = true;
-    } else {
-        if (loadConfigData())
+    }
+    else
+    {
+        if (loadWifiConfig())
         {
             log_i("Got stored credentials from SPIFFS");
             configDataLoaded = true;
-        } else {
+        }
+        else
+        {
             log_w("No WiFi creds found - Set through config portal, enabled by rebooting with TAMPER open");
             while (true)
                 delay(1000);
         }
     }
+
+    // Extra parameters to be configured for Pushover configuration
+    // After connecting, parameter.getValue() will get you the configured value
+    // Format: <ID> <Placeholder text> <default value> <length> <custom HTML> <label placement>
+    // (*** we are not using <custom HTML> and <label placement> ***)
+
+    // PUSHOVER_API_URL
+    ESP_WMParameter PUSHOVER_API_URL_FIELD(PUSHOVER_API_URL_Label, "Pushover API URL", custom_PUSHOVER_API_URL, custom_PUSHOVER_API_URL_LEN);
+
+    // PUSHOVER_USERKEY
+    ESP_WMParameter PUSHOVER_USERKEY_FIELD(PUSHOVER_USERKEY_Label, "Pushover User Key", custom_PUSHOVER_USERKEY, custom_PUSHOVER_USERKEY_LEN);
+
+    // PUSHOVER_APIKEY
+    ESP_WMParameter PUSHOVER_API_KEY_FIELD(PUSHOVER_API_KEY_Label, "Pushover API Key", custom_PUSHOVER_API_KEY, custom_PUSHOVER_API_KEY_LEN);
+
+    ESP_wifiManager.addParameter(&PUSHOVER_API_URL_FIELD);
+    ESP_wifiManager.addParameter(&PUSHOVER_USERKEY_FIELD);
+    ESP_wifiManager.addParameter(&PUSHOVER_API_KEY_FIELD);
 
     if (start_portal)
     {
@@ -488,18 +640,33 @@ void etask_wifi_mgr(void *parameters)
         {
             log_i("Saving current TZ_Name = %s, TZ = %s", WM_config.TZ_Name, WM_config.TZ);
             configTzTime(WM_config.TZ, "pool.ntp.org", "0.pool.ntp.org", "1.pool.ntp.org");
-        } else {
+        }
+        else
+        {
             log_e("Current Timezone Name is not set. Enter Config Portal to set.");
         }
 #endif
 
         ESP_wifiManager.getSTAStaticIPConfig(WM_STA_IPconfig);
-        saveConfigData();
-    } else {
+        saveWifiConfig();
+
+        // Getting posted form values and overriding local variables parameters
+        // Config file is written regardless the connection state
+        strcpy(custom_PUSHOVER_API_URL, PUSHOVER_API_URL_FIELD.getValue());
+        strcpy(custom_PUSHOVER_USERKEY, PUSHOVER_USERKEY_FIELD.getValue());
+        strcpy(custom_PUSHOVER_API_KEY, PUSHOVER_API_KEY_FIELD.getValue());
+
+        // Writing Pushover to JSON config file on flash for next boot
+        savePushoverConfig();
+
+    }
+    else
+    {
 
         // Load stored data, the addAP ready for MultiWiFi reconnection
         if (!configDataLoaded)
-            loadConfigData();
+            loadWifiConfig();
+            loadPushoverConfig();
 
         for (uint8_t i = 0; i < NUM_WIFI_CREDENTIALS; i++)
         {
@@ -522,7 +689,9 @@ void etask_wifi_mgr(void *parameters)
         {
             log_i("Current TZ_Name = %s, TZ = %s", WM_config.TZ_Name, WM_config.TZ);
             configTzTime(WM_config.TZ, "pool.ntp.org", "0.pool.ntp.org", "1.pool.ntp.org");
-        } else {
+        }
+        else
+        {
             log_e("Current Timezone Name is not set. Enter Config Portal to set.");
         }
 #endif
@@ -532,7 +701,6 @@ void etask_wifi_mgr(void *parameters)
         log_i("Connected. Local IP: %s", WiFi.localIP().toString().c_str());
     else
         log_e("Not connected to WiFi!");
-
 
     for (;;)
     {

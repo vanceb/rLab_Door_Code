@@ -9,7 +9,7 @@
 // From v1.1.0
 // You only need to format the filesystem once
 //#define FORMAT_FILESYSTEM       true
-#define FORMAT_FILESYSTEM         false
+#define FORMAT_FILESYSTEM       false
 
 #define MIN_AP_PASSWORD_SIZE    8
 
@@ -17,11 +17,11 @@
 //From v1.0.10, WPA2 passwords can be up to 63 characters long.
 #define PASS_MAX_LEN            64
 
-#define NUM_WIFI_CREDENTIALS      1
+#define NUM_WIFI_CREDENTIALS    1
 
 // Assuming max 490 chars
-#define TZNAME_MAX_LEN            49
-#define TIMEZONE_MAX_LEN          49
+#define TZNAME_MAX_LEN          49
+#define TIMEZONE_MAX_LEN        49
 
 // Use false if you don't like to display Available Pages in Information Page of Config Portal
 // Comment out or use true to display Available Pages in Information Page of Config Portal
@@ -56,6 +56,28 @@
 
 // New in v1.0.11
 #define USING_CORS_FEATURE          true
+
+/* Pushover */
+/* Default values */
+#define PUSHOVER_CONFIG_FILE        "/pushover.json"
+#define PUSHOVER_API_URL            "https://api.pushover.net/1/messages.json"
+#define PUSHOVER_USERKEY            "private"
+#define PUSHOVER_APIKEY             "private"
+
+// Labels for custom parameters in WiFi manager
+#define PUSHOVER_API_URL_Label      "PUSHOVER_API_URL"
+#define PUSHOVER_USERKEY_Label      "PUSHOVER_USERKEY"
+#define PUSHOVER_API_KEY_Label      "PUSHOVER_API_KEY"
+
+/* Pushover - Variables to be populated from config settings */
+#define custom_PUSHOVER_API_URL_LEN     40
+#define custom_PUSHOVER_USERKEY_LEN     32
+#define custom_PUSHOVER_API_KEY_LEN     32
+
+extern char custom_PUSHOVER_API_URL[custom_PUSHOVER_API_URL_LEN];
+extern char custom_PUSHOVER_USERKEY[custom_PUSHOVER_API_KEY_LEN];
+extern char custom_PUSHOVER_API_KEY[custom_PUSHOVER_USERKEY_LEN];
+
 
 void etask_wifi_mgr (void * parameters);
 
