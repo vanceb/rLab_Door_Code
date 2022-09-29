@@ -26,7 +26,7 @@
    can not be read by observers.
  *****************************************************************************************************************************/
 
-//#include <hardware.h>
+#include <hardware.h>
 #include <wifi_mgr.h>
 
 #include <esp_wifi.h>
@@ -46,10 +46,12 @@ FS *filesystem = &SPIFFS;
 #define FileFS SPIFFS
 #define FS_Name "SPIFFS"
 
+#if FEATURE_PUSHOVER
 /* Pushover - Variables to be populated from config settings */
-char custom_PUSHOVER_API_URL[40];
-char custom_PUSHOVER_USERKEY[32];
-char custom_PUSHOVER_API_KEY[32];
+char custom_PUSHOVER_API_URL[custom_PUSHOVER_API_URL_LEN];
+char custom_PUSHOVER_USERKEY[custom_PUSHOVER_USERKEY_LEN];
+char custom_PUSHOVER_API_KEY[custom_PUSHOVER_API_KEY_LEN];
+#endif  // FEATURE_PUSHOVER
 
 typedef struct
 {

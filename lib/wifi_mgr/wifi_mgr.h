@@ -73,7 +73,7 @@
 #define PUSHOVER_API_KEY_Label      "PUSHOVER_API_KEY"
 
 /* Pushover - Variables to be populated from config settings */
-#define custom_PUSHOVER_API_URL_LEN     40
+#define custom_PUSHOVER_API_URL_LEN     64
 #define custom_PUSHOVER_USERKEY_LEN     32
 #define custom_PUSHOVER_API_KEY_LEN     32
 
