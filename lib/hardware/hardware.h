@@ -11,7 +11,7 @@
 #define FEATURE_TAMPER      1   // Enable tamper detection
 #define FEATURE_ADC         1   // Enable voltage monitoring using the ADC
 #define FEATURE_NEOPIXELS   1   // Enable neopixel display
-#define FEATURE_DISPLAY     0   // Enable character display
+#define FEATURE_DISPLAY     1   // Enable character display
 #define FEATURE_KEYPAD      0   // Enable Wiegand keypad for PIN entry
 #define FEATURE_PUSHOVER    1   // Enable Pushover messages (Requires WiFi)
 

@@ -1,7 +1,5 @@
 #include <hardware.h>
 
-#include <WiFi.h>
-
 void setup_gpio() {
     log_i("Setting up GPIO pins");
 
