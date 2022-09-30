@@ -8,6 +8,10 @@
 #include <pi_control.h>
 #endif  // FEATURE_PI
 
+#if FEATURE_NFC
+#include <rfid.h>
+#endif  // FEATURE_NFC
+
 /* Global state variables */
 static bool open1_state = true;
 static bool open2_state = true;
