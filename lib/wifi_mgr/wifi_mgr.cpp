@@ -504,7 +504,7 @@ void etask_wifi_mgr(void *parameters)
         {
             // prevents debug info from the library to hide err message.
             delay(100);
-            Serial.println(F("SPIFFS failed!. Continuing without WiFi!"));
+            log_e("SPIFFS failed!. Continuing without WiFi!");
             while (true)
             {
                 delay(1000);
@@ -550,26 +550,36 @@ void etask_wifi_mgr(void *parameters)
 
     password = "My" + ssid;
 
-    bool configDataLoaded = false;
+    bool WifiConfigLoaded = false;
+    bool POConfigLoaded = false;
+
+    // Load stored data, the addAP ready for MultiWiFi reconnection
+    if(loadWifiConfig()) {
+        log_i("Got WiFi credentials from SPIFFS");
+        WifiConfigLoaded = true;
+    }
+#if FEATURE_PUSHOVER
+    /* Load config for Pushover.net */
+    if(loadPushoverConfig()) {
+        log_i("Got Pushover credentials from SPIFFS");
+    }
+#endif //FEATURE_PUSHOVER
 
     /* Decide whether to start the config portal */
     if (digitalRead(GPIO_TAMPER))
     {
         /* Case is open so start portal */
+        log_w("Case (TAMPER) open on reboot - Starting config portal!");
         start_portal = true;
     }
-    else
+    
+    if(!WifiConfigLoaded && !start_portal)
     {
-        if (loadWifiConfig())
-        {
-            log_i("Got stored credentials from SPIFFS");
-            configDataLoaded = true;
-        }
-        else
-        {
-            log_w("No WiFi creds found - Set through config portal, enabled by rebooting with TAMPER open");
-            while (true)
-                delay(1000);
+        log_w("No WiFi creds found - Continuing without WiFi");
+        log_w("Set WiFi SSID and password through config portal, enabled by rebooting with case (TAMPER) open");
+        while (true) {
+            /* End task here - No WiFi Creds and no portal */
+            delay(1000);
         }
     }
 
@@ -671,13 +681,6 @@ void etask_wifi_mgr(void *parameters)
     }
     else
     {
-
-        // Load stored data, the addAP ready for MultiWiFi reconnection
-        if (!configDataLoaded)
-            loadWifiConfig();
-#if FEATURE_PUSHOVER
-            loadPushoverConfig();
-#endif //FEATURE_PUSHOVER
         for (uint8_t i = 0; i < NUM_WIFI_CREDENTIALS; i++)
         {
             // Don't permit NULL SSID and password len < MIN_AP_PASSWORD_SIZE (8)
