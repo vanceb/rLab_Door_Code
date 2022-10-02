@@ -81,7 +81,7 @@ void setup() {
   while (!pushover.is_configured()) {
     delay(100);
   }
-  pushover.send("rLabDoor booting", "Coming up!", 0);
+  pushover.send("rLabDoor booting", "Coming up!", -1);
 #endif  // FEATURE_PUSHOVER
 #endif  // FEATURE_WIFI
 }

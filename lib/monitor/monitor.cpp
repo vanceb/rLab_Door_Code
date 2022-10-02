@@ -18,7 +18,7 @@ static bool open1_state = true;
 static bool open2_state = true;
 static unsigned long open1_changed = 0;
 static unsigned long open2_changed = 0;
-static bool input_power_lost = false;
+static bool power_lost = false;
 static bool battery_low = false;
 static bool tamper = false;
 
@@ -192,8 +192,13 @@ void monitorTask(void * pvParameters) {
     const long loop_delay = 1000 / LOOP_FREQ;
     unsigned long loop_start = millis();
     long delay_for;
-    uint8_t errors;
+    uint8_t errors = 0;
+    uint8_t prev_errors = 0;
     
+#if FEATURE_DISPLAY
+    setup_i2c_disp();
+#endif  // FEATURE_DISPLAY
+
 #if FEATURE_NEOPIXELS
     /* Neopixels */
     Adafruit_NeoPixel npx1(NPX_NUM_LEDS_1, GPIO_NPX_1, NEO_GRB + NEO_KHZ800);
@@ -202,23 +207,75 @@ void monitorTask(void * pvParameters) {
     npx2.begin();
 #endif  // FEATURE_NEOPIXELS
 
-#if FEATURE_DISPLAY
-    /* Configure I2C Character Display */
-    setup_i2c_disp();
-
-//    display.init();
-//    display.backlight();
-    display.setCursor(0,0);
-    display.print("rLab Door Controller");
-#endif  // FEATURE_DISPLAY
-
     /* Main loop */
     for(;;) {
         /* Run every loop */
         loop_start = millis();
 
+        /* Do the checks on the hardware */
+
         /* Door opening */
         check_door_state();
+
+        /* Check the Tamper input */
+#if FEATURE_TAMPER
+        if (digitalRead(GPIO_TAMPER)) {
+            if (!tamper) {
+                /* This has just happened */
+                tamper = true;
+                log_w("TAMPER - The enclosure is open!");
+#if FEATURE_PUSHOVER
+                pushover.send("rLabDoor Tamper!", "The rLabDoor enclosure has been opened", 0);
+#endif  // FEATURE_PUSHOVER
+            } 
+        } else {
+            if (tamper) {
+                tamper = false;
+                log_i("TAMPER - The enclosure is closed");
+#if FEATURE_PUSHOVER
+                pushover.send("rLabDoor Tamper!", "The rLabDoor enclosure has been closed", -1);
+#endif  // FEATURE_PUSHOVER
+            }
+        }
+#endif  // FEATURE_TAMPER
+
+        /* Once per second */
+        if (loop_counter % LOOP_FREQ == 0) {
+            /* Check the system voltages */
+            errors = check_voltages();
+            if(errors != prev_errors) {
+                prev_errors = errors;
+                /* Something has changed! */
+                if (errors) {
+                    log_w("At least one of the system voltages is out of limits");
+                    if ((errors & ERR_VIN_LOW) && !power_lost) {
+                        power_lost = true;
+                        log_e("Input power lost or low");
+    #if FEATURE_PUSHOVER
+                        pushover.send("rLabDoor Power!", "Input power lost", 1);
+    #endif  // FEATURE_PUSHOVER
+                    }
+                    if ((errors & ERR_VBATT_LOW) && !battery_low) {
+                        battery_low = true;
+                        log_w("Battery voltage is low, door may go offline shortly...");
+    #if FEATURE_PUSHOVER
+                        pushover.send("rLabDoor Power!", "Battery voltage low, door may not operate correctly", 2);
+    #endif  // FEATURE_PUSHOVER
+                    }
+                } else {
+                    log_i("All voltages are within expected limits");
+                    if (power_lost || battery_low) {
+                        log_i("System power is OK");
+    #if FEATURE_PUSHOVER
+                        pushover.send("rLabDoor Power!", "Input power restored", 0);
+    #endif  // FEATURE_PUSHOVER
+                        power_lost = false;
+                        battery_low = false;
+                    }
+                } 
+            }
+        }
+
 
 #if FEATURE_NEOPIXELS
         /* Neopixels */
@@ -240,30 +297,10 @@ void monitorTask(void * pvParameters) {
         npx1.show();
 #endif  // FEATURE_NEOPIXELS        
 
-
-        /* Run every 10 loops */
-        if (loop_counter % 10 == 0) {
-#if FEATURE_TAMPER
-            /* Check the Tamper input */
-            if (digitalRead(GPIO_TAMPER)) {
-                if (!tamper) {
-                    /* This has just happened */
-                    tamper = true;
-                    log_w("TAMPER - The enclosure is open!");
-                } 
-            } else {
-                if (tamper) {
-                    tamper = false;
-                    log_i("TAMPER - The enclosure is closed");
-                }
-            }
-#endif  // FEATURE_TAMPER
-        }
-
-        /* Run once per second */
-        if (loop_counter % LOOP_FREQ == 0) {
 #if FEATURE_DISPLAY
-            /* Display */
+        /* Update display once per second */
+        if (loop_counter % LOOP_FREQ == 0) {
+            /* Line 1 - Alerts */
             display.setCursor(0,0);
             if (tamper) {
                 display.print("       TAMPER       ");
@@ -271,52 +308,27 @@ void monitorTask(void * pvParameters) {
                 display.print("rLab Door Controller");
             }
 
-            /* Update Door Status on display*/
+            /* Line 2 - Power messages */
+            display.setCursor(0,1);
+            if (battery_low) {
+                /* Display Power message */
+                display.print("Power Off - Batt Low");
+            } else if (power_lost) {
+                /* Display Power message */
+                display.print("Power Off - Batt OK ");
+            } else {
+                /* Display Power OK message */
+                display.print("      Power OK      ");
+            }
+
+            /* Line 3 - Door Status */
             display.setCursor(0,2);
             display.printf("Door 1: %s 2: %s ",
                 (open1_state ? "open" : "lock"),
                 (open2_state ? "open" : "lock")
             );
-#endif  // FEATURE_DISPLAY
-            /* Check the system voltages */
-            errors = check_voltages();
-            if(errors) {
-                /* One of the voltages is out of limits */
-                log_i("At least one of the system voltages is out of limits");
-                if ((errors & ERR_VIN_LOW) && !input_power_lost) {
-                    input_power_lost = true;
-                    log_e("Input power lost or low");
-#if FEATURE_DISPLAY
-                    /* Display Power message */
-                    display.setCursor(0,1);
-                    display.print("Power Off - Batt OK ");
-#endif  // FEATURE_DISPLAY
-                }
-                if ((errors & ERR_VBATT_LOW) && !battery_low) {
-                    battery_low = true;
-                    log_w("Battery voltage is low, door may go offline shortly...");
-#if FEATURE_DISPLAY
-                    /* Display Power message */
-                    display.setCursor(0,1);
-                    display.print("Power Off - Batt Low");
-#endif  // FEATURE_DISPLAY
-                }
-            } else {
-                /* No errors, so clear the flags */
-                if (input_power_lost || battery_low) {
-                    log_i("System power is OK");
-                    input_power_lost = false;
-                    battery_low = false;
-                } 
-#if FEATURE_DISPLAY
-                /* Display Power OK message */
-                display.setCursor(0,1);
-                display.print("      Power OK      ");
-#endif  // FEATURE_DISPLAY
-            }
-
-#if FEATURE_DISPLAY
-            /* Show uptime */
+            
+            /* Line 4 - Show uptime */
             display.setCursor(0,3);
             uptime::calculateUptime();
             display.printf("Up: %03lud %02luh %02lum %02lus",
@@ -325,14 +337,8 @@ void monitorTask(void * pvParameters) {
                             uptime::getMinutes(),
                             uptime::getSeconds()
             );
+        }
 #endif  // FEATURE_DISPLAY
-        }
-
-        /* Run once per hour */
-        if (loop_counter % (LOOP_FREQ * 3600) == 0) {
-
-        }
-
 
         /* Work out how long we have to sleep for */
         delay_for = (loop_delay - (millis() - loop_start));
