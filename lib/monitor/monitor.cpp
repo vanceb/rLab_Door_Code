@@ -194,6 +194,10 @@ void monitorTask(void * pvParameters) {
     long delay_for;
     uint8_t errors = 0;
     uint8_t prev_errors = 0;
+    int pi_connected = 0;
+    int pi_connected_prev = 0;
+    int pi_ok = 0;
+    int pi_ok_prev = 0;
     
 #if FEATURE_DISPLAY
     setup_i2c_disp();
@@ -207,12 +211,55 @@ void monitorTask(void * pvParameters) {
     npx2.begin();
 #endif  // FEATURE_NEOPIXELS
 
+  #if FEATURE_PI
+  /* Check the Raspberry Pi */
+  Pi rpi;
+  rpi.begin(
+    GPIO_PI_POWERED,
+    GPIO_PI_HEARTBEAT,
+    GPIO_PI_OPEN_CMD_1,
+    GPIO_PI_OPEN_CMD_2
+  );
+#endif  // FEATURE_PI
+
     /* Main loop */
     for(;;) {
         /* Run every loop */
         loop_start = millis();
 
         /* Do the checks on the hardware */
+
+#if FEATURE_PI
+        /* Check that the Pi is alive */
+        pi_connected = rpi.is_connected();
+        pi_ok        = rpi.is_alive();
+        if (pi_ok && pi_connected) {
+            if (pi_ok != pi_ok_prev) {
+                /* The service has come up */
+                log_i("Raspberry Pi door controller is operational");
+#if FEATURE_PUSHOVER
+                pushover.send("rLabDoor Pi", "The rLabDoor Pi service detected. Pi door control is enabled", -1);
+#endif  // FEATURE_PUSHOVER
+            }
+        } else {
+            /* Something is wrong */
+            if (!pi_connected) {
+                /* Pi not connected */
+                if (pi_ok) {
+                    /* This should not happen! */
+                    log_e("WEIRD! Pi not connected, but seeing a heartbeat!");
+                } else {
+                    /* Heartbeat not detected - service not running? */
+                    log_e("Pi not detectd.  Pi door control disabled!");
+#if FEATURE_PUSHOVER
+                    pushover.send("rLabDoor Pi", "The rLabDoor Pi service NOT detected. Pi door control disabled", 0);
+#endif  // FEATURE_PUSHOVER
+                }
+            } 
+        }
+        pi_ok_prev = pi_ok;
+        pi_connected_prev = pi_connected;
+#endif  // FEATURE_PI
 
         /* Door opening */
         check_door_state();
@@ -304,6 +351,8 @@ void monitorTask(void * pvParameters) {
             display.setCursor(0,0);
             if (tamper) {
                 display.print("       TAMPER       ");
+            } else if (!pi_ok) {
+                display.print("  Pi: Service Down  ");
             } else {
                 display.print("rLab Door Controller");
             }

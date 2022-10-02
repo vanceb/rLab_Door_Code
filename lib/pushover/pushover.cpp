@@ -152,7 +152,7 @@ void pushoverTask(void *pvParameters)
         if (xQueueReceive(queue, (void *)&msg, 0))
         {
             /* Send the message to the Pushover API */
-            log_i("Pushover sender got msg: %s", msg.title);
+            log_i("Pushover sender got msg: %s: %s", msg.title, msg.body);
             pushover._send_to_api(msg.title, msg.body, msg.priority);
         }
 #endif // FEATURE_PUSHOVER

@@ -27,28 +27,6 @@ void setup() {
   Serial.println("Starting setup");
   setup_gpio();
 
-  #if FEATURE_PI
-  /* Check the Raspberry Pi */
-  Pi rpi;
-  rpi.begin(
-    GPIO_PI_POWERED,
-    GPIO_PI_HEARTBEAT,
-    GPIO_PI_OPEN_CMD_1,
-    GPIO_PI_OPEN_CMD_2
-  );
-  delay(1000);  // give the ISR chance to fire
-  if(rpi.is_connected()) {
-    log_i("Detected Raspberry Pi");
-  } else {
-    log_w("No Raspberry Pi detected");
-  }
-  if(rpi.is_alive()) {
-    log_i("Detected Pi Heartbeat - service running");
-  } else {
-    log_w("No Heartbeat detected from the Pi - check if service is running");
-  }
-#endif  // FEATURE_PI
-
 
 /* Monitor Task - The main task for controlling the door and displays */
   xTaskCreate(monitorTask, "Monitor Task", 5000, NULL, 16, &monitorTaskHandle);
