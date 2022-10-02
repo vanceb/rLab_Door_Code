@@ -6,10 +6,15 @@
 #include <Arduino.h>
 
 /* Pushover (https://pushover.net) */
+#define PUSHOVER_DEFAULT_URL        "https://api.pushover.net/1/messages.json"
+#define PUSHOVER_URL_MAX_LEN        64
+#define PUSHOVER_USER_KEY_MAX_LEN   32
+#define PUSHOVER_API_KEY_MAX_LEN    32
 #define PUSHOVER_MAX_PAYLOAD_LEN    512
 #define PUSHOVER_MAX_TITLE_LEN      64
-#define PUSHOVER_MAX_MESSAGE_LEN    384
+#define PUSHOVER_MAX_BODY_LEN    384
 #define PUSHOVER_MESSAGE_QUEUE_LEN  3  //Should be at least the number of tasks that want to use it
+
 
 /* CA Certificate used by Pushover */
 #define DIGICERT_ROOT_CA "-----BEGIN CERTIFICATE-----\n" \
@@ -47,7 +52,7 @@
 /* Message Structure */
 typedef struct Message {
     char title[PUSHOVER_MAX_TITLE_LEN];
-    char body[PUSHOVER_MAX_MESSAGE_LEN];
+    char body[PUSHOVER_MAX_BODY_LEN];
     int  priority;
 } Message;
 
@@ -56,16 +61,23 @@ class Pushover
 private:
     bool configured;
     QueueHandle_t msg_queue;
+    char po_user_key[PUSHOVER_USER_KEY_MAX_LEN];
+    char po_api_key [PUSHOVER_API_KEY_MAX_LEN];
+    char po_api_url [PUSHOVER_URL_MAX_LEN];
+
 public:
     Pushover(/* args */);
     ~Pushover();
-    int configure();
-    int configure(const char* user_key, const char* api_key, const char* url);
+    int configure(const char* user_key, const char* api_key, const char* url = PUSHOVER_DEFAULT_URL);
     bool is_configured();
+    int _send_to_api(const char * title, const char * msg, int priority);
     int send(const char * title, const char * msg, int priority);
     int send(Message * msg);
     QueueHandle_t getQueue();
 };
+
+/* Global variable instance of the Pushover class */
+extern Pushover pushover;
 
 #endif  // FEATURE_PUSHOVER
 /* Task to send queued messages */

@@ -3,6 +3,7 @@
 
 #include <monitor.h>
 #include <hardware.h>
+#include <pushover.h>
 
 #if FEATURE_PI
 #include <pi_control.h>

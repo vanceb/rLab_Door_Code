@@ -48,9 +48,9 @@ FS *filesystem = &SPIFFS;
 
 #if FEATURE_PUSHOVER
 /* Pushover - Variables to be populated from config settings */
-char custom_PUSHOVER_API_URL[custom_PUSHOVER_API_URL_LEN];
-char custom_PUSHOVER_USERKEY[custom_PUSHOVER_USERKEY_LEN];
-char custom_PUSHOVER_API_KEY[custom_PUSHOVER_API_KEY_LEN];
+char custom_PUSHOVER_API_URL[custom_PUSHOVER_API_URL_LEN] = { 0 };
+char custom_PUSHOVER_USERKEY[custom_PUSHOVER_USERKEY_LEN] = { 0 };
+char custom_PUSHOVER_API_KEY[custom_PUSHOVER_API_KEY_LEN] = { 0 };
 #endif  // FEATURE_PUSHOVER
 
 typedef struct

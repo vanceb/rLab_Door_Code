@@ -19,7 +19,6 @@ TaskHandle_t rfidTaskHandle;
 
 #if FEATURE_PUSHOVER
 #include <pushover.h>
-Pushover pushover;
 TaskHandle_t pushoverTaskHandle;
 #endif
 
@@ -79,20 +78,10 @@ void setup() {
 
 #if FEATURE_PUSHOVER
   xTaskCreate(pushoverTask, "Pushover Task", 8000, (void*) &pushover, 8, &pushoverTaskHandle);
-  int wifi_wait = 10;
-  while ((--wifi_wait >= 0) && (WiFi.status() != WL_CONNECTED))
-    delay(1000);
-  if(WiFi.status() == WL_CONNECTED) { 
-    QueueHandle_t po_queue = pushover.getQueue();
-    Message msg;
-    strlcpy(msg.title, "rLabDoor Booting", PUSHOVER_MAX_TITLE_LEN);
-    strlcpy(msg.body, "Coming up...", PUSHOVER_MAX_MESSAGE_LEN);
-    msg.priority = -1;
-    xQueueSendToBack(po_queue, &msg, 1);
-  } else {
-    log_e("Wifi not connected, unable to send booting Pushover message!");
+  while (!pushover.is_configured()) {
+    delay(100);
   }
-
+  pushover.send("rLabDoor booting", "Coming up!", 0);
 #endif  // FEATURE_PUSHOVER
 #endif  // FEATURE_WIFI
 }
