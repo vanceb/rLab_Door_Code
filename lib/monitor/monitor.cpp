@@ -82,8 +82,8 @@ void check_door_state() {
     #endif  // FEATURE_PI
     
     #if FEATURE_NFC
-    open1_request |= pi_open1;
-    open2_request |= pi_open2;
+    open1_request |= rfid_open1;
+    open2_request |= rfid_open2;
     #endif  // FEATURE_NFC
 
     /* Change the state of the door if requested */
