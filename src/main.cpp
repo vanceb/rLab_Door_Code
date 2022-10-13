@@ -9,7 +9,7 @@
 
 TaskHandle_t wifi_task;
 TaskHandle_t monitorTaskHandle;
-TaskHandle_t otaTaskHandle;
+TaskHandle_t ota_task;
 
 #if FEATURE_NFC
 extern "C" {
