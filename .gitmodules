@@ -1,0 +1,3 @@
+[submodule "lib/etask_ota"]
+	path = lib/etask_ota
+	url = git@github.com:vanceb/etask_ota.git
