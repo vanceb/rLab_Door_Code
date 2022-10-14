@@ -18,7 +18,7 @@ Pushover::~Pushover()
 {
 }
 
-int Pushover::begin(const char * user_key, const char * api_key, const char * url) { 
+TaskHandle_t Pushover::begin(const char * user_key, const char * api_key, const char * url) { 
     msg_queue = xQueueCreate(PUSHOVER_MESSAGE_QUEUE_LEN, sizeof(Message));
     memset(po_user_key, 0, PUSHOVER_USER_KEY_MAX_LEN);
     memset(po_api_key,  0, PUSHOVER_API_KEY_MAX_LEN);
@@ -38,7 +38,9 @@ int Pushover::begin(const char * user_key, const char * api_key, const char * ur
     } else {
         configured = false;
     }
-    return configured;
+    TaskHandle_t th;
+    xTaskCreate(pushoverTask, "Pushover Task", 8000, (void*) &pushover, 8, &th);
+    return th;
 }
 
 
@@ -139,21 +141,11 @@ QueueHandle_t Pushover::getQueue()
 
 void pushoverTask(void *pvParameters)
 {
-    /* Configure the pushover client */
-    /* Must wait for credentials to be populated from SPIFFS - Done in wifi_mgr task...*/
-    while (strlen(custom_PUSHOVER_API_KEY) == 0 ||
-           strlen(custom_PUSHOVER_USERKEY) == 0 ||
-           strlen(custom_PUSHOVER_API_URL) == 0) 
-    {
-        delay(100);
-    }
-    pushover.begin(custom_PUSHOVER_USERKEY, custom_PUSHOVER_API_KEY, custom_PUSHOVER_API_URL);
-    /* Then get the variables needed for the main task loop */
 
     for (;;)
     {
         /* Check queue for message */
         pushover.process_queue();
-        delay(10);
+        delay(100);
     }
 }

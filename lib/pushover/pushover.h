@@ -68,7 +68,7 @@ private:
 public:
     Pushover();
     ~Pushover();
-    int begin(const char* user_key, const char* api_key, const char* url = PUSHOVER_DEFAULT_URL);
+    TaskHandle_t begin(const char* user_key, const char* api_key, const char* url = PUSHOVER_DEFAULT_URL);
     bool is_configured();
     int send(const char * title, const char * msg, int priority);
     int send(Message * msg);
