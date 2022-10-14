@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <hardware.h>
 
-#if FEATURE_PUSHOVER
 #include <pushover.h>
 
 #include <wifi_mgr.h>
@@ -13,14 +12,14 @@ Pushover pushover;
 
 Pushover::Pushover()
 {
-    msg_queue = xQueueCreate(PUSHOVER_MESSAGE_QUEUE_LEN, sizeof(Message));
 }
 
 Pushover::~Pushover()
 {
 }
 
-int Pushover::configure(const char * user_key, const char * api_key, const char * url) { 
+int Pushover::begin(const char * user_key, const char * api_key, const char * url) { 
+    msg_queue = xQueueCreate(PUSHOVER_MESSAGE_QUEUE_LEN, sizeof(Message));
     memset(po_user_key, 0, PUSHOVER_USER_KEY_MAX_LEN);
     memset(po_api_key,  0, PUSHOVER_API_KEY_MAX_LEN);
     memset(po_api_url,  0, PUSHOVER_URL_MAX_LEN);
@@ -119,16 +118,27 @@ int Pushover::send(Message *msg)
     return xQueueSendToBack(this->msg_queue, msg, 1);
 }
 
+int Pushover::process_queue() {
+    int i = 0;
+    Message msg;
+
+    while (xQueueReceive(msg_queue, (void *)&msg, 0))
+    {
+        /* Send the message to the Pushover API */
+        log_i("Pushover sender got msg: %s: %s", msg.title, msg.body);
+        pushover._send_to_api(msg.title, msg.body, msg.priority);
+        i++;
+    }
+    return i;
+}
+
 QueueHandle_t Pushover::getQueue()
 {
     return msg_queue;
 }
 
-#endif // FEATURE_PUSHOVER
-
 void pushoverTask(void *pvParameters)
 {
-#if FEATURE_PUSHOVER
     /* Configure the pushover client */
     /* Must wait for credentials to be populated from SPIFFS - Done in wifi_mgr task...*/
     while (strlen(custom_PUSHOVER_API_KEY) == 0 ||
@@ -137,25 +147,13 @@ void pushoverTask(void *pvParameters)
     {
         delay(100);
     }
-    pushover.configure(custom_PUSHOVER_USERKEY, custom_PUSHOVER_API_KEY, custom_PUSHOVER_API_URL);
+    pushover.begin(custom_PUSHOVER_USERKEY, custom_PUSHOVER_API_KEY, custom_PUSHOVER_API_URL);
     /* Then get the variables needed for the main task loop */
-    QueueHandle_t queue;
-    queue = pushover.getQueue();
-    Message msg;
-
-#endif // FEATURE_PUSHOVER
 
     for (;;)
     {
-#if FEATURE_PUSHOVER
         /* Check queue for message */
-        if (xQueueReceive(queue, (void *)&msg, 0))
-        {
-            /* Send the message to the Pushover API */
-            log_i("Pushover sender got msg: %s: %s", msg.title, msg.body);
-            pushover._send_to_api(msg.title, msg.body, msg.priority);
-        }
-#endif // FEATURE_PUSHOVER
+        pushover.process_queue();
         delay(10);
     }
 }

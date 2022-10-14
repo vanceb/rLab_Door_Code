@@ -1,8 +1,6 @@
 #ifndef PUSHOVER_H
 #define PUSHOVER_H
 
-#if FEATURE_PUSHOVER
-
 #include <Arduino.h>
 
 /* Pushover (https://pushover.net) */
@@ -65,21 +63,22 @@ private:
     char po_api_key [PUSHOVER_API_KEY_MAX_LEN];
     char po_api_url [PUSHOVER_URL_MAX_LEN];
 
-public:
-    Pushover(/* args */);
-    ~Pushover();
-    int configure(const char* user_key, const char* api_key, const char* url = PUSHOVER_DEFAULT_URL);
-    bool is_configured();
     int _send_to_api(const char * title, const char * msg, int priority);
+
+public:
+    Pushover();
+    ~Pushover();
+    int begin(const char* user_key, const char* api_key, const char* url = PUSHOVER_DEFAULT_URL);
+    bool is_configured();
     int send(const char * title, const char * msg, int priority);
     int send(Message * msg);
+    int process_queue();
     QueueHandle_t getQueue();
 };
 
 /* Global variable instance of the Pushover class */
 extern Pushover pushover;
 
-#endif  // FEATURE_PUSHOVER
 /* Task to send queued messages */
 void pushoverTask( void * pvParameters);
 
