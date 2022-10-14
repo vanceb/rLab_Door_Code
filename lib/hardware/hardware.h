@@ -14,7 +14,7 @@
 #define FEATURE_DISPLAY     1   // Enable character display
 #define FEATURE_KEYPAD      0   // Enable Wiegand keypad for PIN entry
 #define FEATURE_PUSHOVER    1   // Enable Pushover messages (Requires WiFi)
-#define FEATURE_OTA         1   // Enable OTA software updates from S3 (Requires WiFi)
+#define FEATURE_OTA         0   // Enable OTA software updates from S3 (Requires WiFi)
 
 
 /* GPIO config */
