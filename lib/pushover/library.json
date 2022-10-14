@@ -1,0 +1,23 @@
+{
+  "name": "Pushover",
+  "version": "0.0.1",
+  "description": "Sends Pushover Messages",
+  "keywords": "pushover, message",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/vanceb/pushover.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Vance B",
+      "email": "v@nce.me"
+    }
+  ],
+  "license": "MIT",
+  "dependencies": {
+  },
+  "frameworks": "*",
+  "platforms": "*"
+}
