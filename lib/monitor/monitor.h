@@ -2,8 +2,8 @@
 #define MONITOR_H
 
 #define LOOP_FREQ   (50)  // How many times per second should the main loop run?
-#define DOOR_OPEN_MAX_MS    (5000)
-
+#define DOOR_OPEN_MAX_MS    (5000)  // How long to timeout door being open
+#define REJECT_INDICATION   (2000)  // How long to show card rejected lights
 /* Voltage Measurement */
 /* Conversion factors */
 #define VIN_FACTOR          (75)

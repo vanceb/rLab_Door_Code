@@ -18,6 +18,8 @@ static bool open1_state = true;
 static bool open2_state = true;
 static unsigned long open1_changed = 0;
 static unsigned long open2_changed = 0;
+static bool pi_reject = false;
+static unsigned long pi_reject_indicated = 0;
 static bool power_lost = false;
 static bool battery_low = false;
 static bool tamper = false;
@@ -77,8 +79,21 @@ void check_door_state() {
     bool open2_request = false;
 
     #if FEATURE_PI
-    open1_request |= pi_open1;
+    #if FEATURE_PI_OPEN2_REJECT
+    if (pi_open2) {
+        log_w("Card Rejected by Pi - doors locked");
+        pi_reject = true;
+        pi_reject_indicated = millis() + REJECT_INDICATION;
+        pi_open1 = false;  // Reject trumps an open command
+        pi_open2 = false;
+    } else {
+        pi_reject = false;
+    }
+    open2_request |= pi_open1;  // Use the open1 command to open both doors
+    #else
     open2_request |= pi_open2;
+    #endif  // FEATURE_PI_OPEN2_REJECT
+    open1_request |= pi_open1;
     #endif  // FEATURE_PI
     
     #if FEATURE_NFC
@@ -233,30 +248,36 @@ void monitorTask(void * pvParameters) {
         /* Check that the Pi is alive */
         pi_connected = rpi.is_connected();
         pi_ok        = rpi.is_alive();
-        if (pi_ok && pi_connected) {
-            if (pi_ok != pi_ok_prev) {
-                /* The service has come up */
-                log_i("Raspberry Pi door controller is operational");
+        if (pi_connected) {
+            if (pi_ok) {
+                /* All good! */
+                if (!pi_ok_prev) {
+                    /* Heartbeat just come up */
+                    log_i("Raspberry Pi detected with heartbeat, all OK");
 #if FEATURE_PUSHOVER
-                pushover.send("rLabDoor Pi", "The rLabDoor Pi service detected. Pi door control is enabled", -1);
+                    pushover.send("rLabDoor Pi", "The rLabDoor Pi service detected. Pi door control is enabled", -1);
 #endif  // FEATURE_PUSHOVER
+                } else {
+                    /*Been good for a while, nothing to say */
+                }
+            } else {
+                /* No recent heartbeat from the Raspberry Pi */
+                if (pi_ok_prev) {
+                    /* Was OK before so alert */
+                    log_e("No recent heartbeat from Raspberry Pi - Check the service on the Pi");
+                } else {
+                    /* Not seen in a while, stay silent */
+                }
             }
         } else {
-            /* Something is wrong */
-            if (!pi_connected) {
-                /* Pi not connected */
-                if (pi_ok) {
-                    /* This should not happen! */
-                    log_e("WEIRD! Pi not connected, but seeing a heartbeat!");
-                } else {
-                    /* Heartbeat not detected - service not running? */
-                    log_e("Pi not detectd.  Pi door control disabled!");
-#if FEATURE_PUSHOVER
-                    pushover.send("rLabDoor Pi", "The rLabDoor Pi service NOT detected. Pi door control disabled", 0);
-#endif  // FEATURE_PUSHOVER
-                }
-            } 
+            if (pi_connected_prev) {
+                /* We have seen it up a moment ago */
+                log_e("Can't detect Raspberry Pi any more");
+            } else {
+                log_e("No Raspberry Pi detected on startup");
+            }
         }
+
         pi_ok_prev = pi_ok;
         pi_connected_prev = pi_connected;
 #endif  // FEATURE_PI
@@ -332,6 +353,10 @@ void monitorTask(void * pvParameters) {
         if (open1_state || open2_state) {
             for (i=0; i<NPX_NUM_LEDS_1; i++) {
                 npx1.setPixelColor(i, npx1.Color(0,255,0));
+            }
+        } else if (millis() < pi_reject_indicated) {
+            for (i=0; i<NPX_NUM_LEDS_1; i++) {
+                npx1.setPixelColor(i, npx1.Color(255,0,0));   
             }
         } else {
             brightness = loop_counter % 255;

@@ -7,6 +7,7 @@
 #define FEATURE_WIFI        1   // Enable wifi
 #define FEATURE_PI          1   // Enable control by Pi (GPIO)
 #define FEATURE_PI_SERIAL   0   // Enable serial communication with Pi (Not Implemented)
+#define FEATURE_PI_OPEN2_REJECT 1  // Enable the pi_open2 connmnd to be interpreted as a card read failure
 #define FEATURE_NFC         1   // Enable NFC card reader using PN532 (Not Implemented)
 #define FEATURE_TAMPER      1   // Enable tamper detection
 #define FEATURE_ADC         1   // Enable voltage monitoring using the ADC
