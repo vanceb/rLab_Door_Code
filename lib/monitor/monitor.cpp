@@ -249,6 +249,7 @@ void monitorTask(void * pvParameters) {
         pi_connected = rpi.is_connected();
         pi_ok        = rpi.is_alive();
         if (pi_connected) {
+            /* We can see the physical connection */
             if (pi_ok) {
                 /* All good! */
                 if (!pi_ok_prev) {
@@ -265,6 +266,9 @@ void monitorTask(void * pvParameters) {
                 if (pi_ok_prev) {
                     /* Was OK before so alert */
                     log_e("No recent heartbeat from Raspberry Pi - Check the service on the Pi");
+#if FEATURE_PUSHOVER
+                    pushover.send("rLabDoor Pi", "No heartbeat detected from the Pi - Door will not operate", -1);
+#endif  // FEATURE_PUSHOVER
                 } else {
                     /* Not seen in a while, stay silent */
                 }
@@ -273,8 +277,14 @@ void monitorTask(void * pvParameters) {
             if (pi_connected_prev) {
                 /* We have seen it up a moment ago */
                 log_e("Can't detect Raspberry Pi any more");
+#if FEATURE_PUSHOVER
+                pushover.send("rLabDoor Pi", "Raspberry Pi connection physical lost", -1);
+#endif  // FEATURE_PUSHOVER
             } else {
                 log_e("No Raspberry Pi detected on startup");
+#if FEATURE_PUSHOVER
+                pushover.send("rLabDoor Pi", "Raspberry Pi physical connection not detected", -1);
+#endif  // FEATURE_PUSHOVER
             }
         }
 
