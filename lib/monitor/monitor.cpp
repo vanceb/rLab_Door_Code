@@ -45,6 +45,28 @@ byte WiFi_Char[8] = {
     B10101,
     B00000
 };
+/*
+byte WiFi_AP_Char[8] = {
+    B00001,
+    B00001,
+    B00101,
+    B00101,
+    B10101,
+    B10101,
+    B11111,
+    B11111
+};
+*/
+byte WiFi_AP_Char[8] = {
+    B10001,
+    B10001,
+    B01010,
+    B01010,
+    B00100,
+    B11111,
+    B11111,
+    B00000
+};
 
 byte Pi_Char[8] = {
     B00000,
@@ -99,10 +121,11 @@ int setup_i2c_disp() {
         
         /* Create Custom Characters */
         display.createChar(0, WiFi_Char);
-        display.createChar(1, Pi_Char);
-        display.createChar(2, Plug_Char);
-        display.createChar(3, Batt_Full_Char);
-        display.createChar(4, Batt_Empty_Char);
+        display.createChar(1, WiFi_AP_Char);
+        display.createChar(2, Pi_Char);
+        display.createChar(3, Plug_Char);
+        display.createChar(4, Batt_Full_Char);
+        display.createChar(5, Batt_Empty_Char);
 
         display.init();
         display.clear();
@@ -458,6 +481,8 @@ void monitorTask(void * pvParameters) {
             display.setCursor(19,0);
             if (WiFi.status() == WL_CONNECTED) {
                 display.write(byte(0));
+            } else if(WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+                display.write(byte(1));
             } else {
                 display.print(" ");
             }
@@ -465,7 +490,7 @@ void monitorTask(void * pvParameters) {
             /* Show Pi Connection Status */
             display.setCursor(15,0);
             if (pi_ok) {
-                display.write(byte(1));
+                display.write(byte(2));
             } else {
                 display.print(" ");
             }
@@ -476,17 +501,17 @@ void monitorTask(void * pvParameters) {
                 /* Display Power message */
 //                display.print("Power Off - Batt Low");
                 /* Show Batt Low Status*/
-                display.write(byte(4));
+                display.write(byte(5));
             } else if (power_lost) {
                 /* Display Power message */
 //                display.print("Power Off - Batt OK ");
                 /* Show Batt Full Status*/
-                display.write(byte(3));
+                display.write(byte(4));
             } else {
                 /* Display Power OK message */
 //                display.print("      Power OK      ");
                 /* Show Mains Power Status*/
-                display.write(byte(2));
+                display.write(byte(3));
             }
 
             /* Line 2 - Card swipe status */
