@@ -94,16 +94,6 @@
 #define WIFI_PASSWD_MAX_LEN 64
 #endif
 
-/* Preferences stored in Flash */
-extern Preferences prefs;
-#define PREFS_NS            "rlabDoor"      // Preferences namespace
-#define PREFS_WIFI_SSID_KEY "wifi_ssid"     // Key for storing ssid
-#define PREFS_WIFI_PWD_KEY  "wifi_passwd"   // Key for storing wifi passwd
-
-
 void setup_gpio();
-void load_prefs();
-int configure_wifi(char * ssid, char * passwd);
-void start_wifi(uint16_t timeout_secs = 10);
 
 #endif
