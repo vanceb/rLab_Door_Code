@@ -450,7 +450,7 @@ void monitorTask(void * pvParameters) {
 #if FEATURE_DISPLAY
         /* Update display once per second */
         if (loop_counter % LOOP_FREQ == 0) {
-            /* Line 1 - Alerts */
+            /* Line 1 - Status Icons */
             display.setCursor(0,0);
             display.print("rLab Door      ");
 
@@ -470,26 +470,33 @@ void monitorTask(void * pvParameters) {
                 display.print(" ");
             }
 
-            /* Line 2 - Power messages */
-            display.setCursor(0,1);
+            /* Show Power status */
+            display.setCursor(17,0);
             if (battery_low) {
                 /* Display Power message */
 //                display.print("Power Off - Batt Low");
                 /* Show Batt Low Status*/
-                display.setCursor(17,0);
                 display.write(byte(4));
             } else if (power_lost) {
                 /* Display Power message */
 //                display.print("Power Off - Batt OK ");
                 /* Show Batt Full Status*/
-                display.setCursor(17,0);
                 display.write(byte(3));
             } else {
                 /* Display Power OK message */
 //                display.print("      Power OK      ");
                 /* Show Mains Power Status*/
-                display.setCursor(17,0);
                 display.write(byte(2));
+            }
+
+            /* Line 2 - Card swipe status */
+            display.setCursor(0,1);
+            if (open1_state || open2_state) {
+                display.print("   Card Accepted    ");
+            } else if (millis() < pi_reject_indicated) {
+                display.print("   Card Rejected    ");
+            } else {
+                display.print("                    ");
             }
 
             /* Line 3 - Door Status */
