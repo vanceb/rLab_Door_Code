@@ -13,7 +13,7 @@
 /* Voltage limits */
 #define VIN_LOW             (17.5)
 #define VIN_HI              (25.0)
-#define VBATT_LOW           (12.0)
+#define VBATT_LOW           (11.0)
 #define VBATT_CHARGE        (13.5)
 #define VBATT_HI            (14.0)
 #define V5_LOW              (4.0)
