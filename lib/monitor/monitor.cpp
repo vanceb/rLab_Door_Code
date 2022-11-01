@@ -5,6 +5,10 @@
 #include <hardware.h>
 #include <pushover.h>
 
+#if FEATURE_WIFI
+#include <WiFi.h>
+#endif
+
 #if FEATURE_PI
 #include <pi_control.h>
 #endif  // FEATURE_PI
@@ -31,13 +35,77 @@ static bool tamper = false;
 #include "uptime.h"
 LiquidCrystal_I2C display = LiquidCrystal_I2C(DISP_ADDR, DISP_COLS, DISP_ROWS);
 
+byte WiFi_Char[8] = {
+    B00000,
+    B00001,
+    B00001,
+    B00101,
+    B00101,
+    B10101,
+    B10101,
+    B00000
+};
+
+byte Pi_Char[8] = {
+    B00000,
+    B00000,
+    B11101,
+    B10100,
+    B11101,
+    B10001,
+    B10001,
+    B00000
+};
+
+byte Plug_Char[8] = {
+    B00000,
+    B01110,
+    B11011,
+    B11111,
+    B10101,
+    B11111,
+    B00100,
+    B00000
+};
+
+byte Batt_Full_Char[8] = {
+    B00100,
+    B01110,
+    B01110,
+    B01110,
+    B01110,
+    B01110,
+    B01110,
+    B00000
+};
+
+byte Batt_Empty_Char[8] = {
+    B00100,
+    B01010,
+    B01010,
+    B01010,
+    B01010,
+    B01010,
+    B01110,
+    B00000
+};
+
 int setup_i2c_disp() {
     Wire.begin(GPIO_SDA_DISP, GPIO_SCL_DISP);
     /* Check to see that we have a display */
     Wire.beginTransmission(DISP_ADDR);
     if (Wire.endTransmission() == 0) {
         log_i("Character display found at i2c 0x%02X", DISP_ADDR);
+        
+        /* Create Custom Characters */
+        display.createChar(0, WiFi_Char);
+        display.createChar(1, Pi_Char);
+        display.createChar(2, Plug_Char);
+        display.createChar(3, Batt_Full_Char);
+        display.createChar(4, Batt_Empty_Char);
+
         display.init();
+        display.clear();
         display.backlight();
         return true;
     } else {
@@ -270,7 +338,7 @@ void monitorTask(void * pvParameters) {
                     pushover.send("rLabDoor Pi", "No heartbeat detected from the Pi - Door will not operate", -1);
 #endif  // FEATURE_PUSHOVER
                 } else {
-                    /* Not seen in a while, stay silent */
+                    /* Startup or not seen in a while, stay silent */
                 }
             }
         } else {
@@ -384,12 +452,22 @@ void monitorTask(void * pvParameters) {
         if (loop_counter % LOOP_FREQ == 0) {
             /* Line 1 - Alerts */
             display.setCursor(0,0);
-            if (tamper) {
-                display.print("       TAMPER       ");
-            } else if (!pi_ok) {
-                display.print("  Pi: Service Down  ");
+            display.print("   rLab Door");
+
+            /* Show WiFi status*/
+            display.setCursor(19,0);
+            if (WiFi.status() == WL_CONNECTED) {
+                display.write(byte(0));
             } else {
-                display.print("rLab Door Controller");
+                display.print(" ");
+            }
+
+            /* Show Pi Connection Status */
+            display.setCursor(15,0);
+            if (pi_ok) {
+                display.write(byte(1));
+            } else {
+                display.print(" ");
             }
 
             /* Line 2 - Power messages */
@@ -397,12 +475,21 @@ void monitorTask(void * pvParameters) {
             if (battery_low) {
                 /* Display Power message */
                 display.print("Power Off - Batt Low");
+                /* Show Batt Low Status*/
+                display.setCursor(17,0);
+                display.write(byte(4));
             } else if (power_lost) {
                 /* Display Power message */
                 display.print("Power Off - Batt OK ");
+                /* Show Batt Full Status*/
+                display.setCursor(17,0);
+                display.write(byte(3));
             } else {
                 /* Display Power OK message */
                 display.print("      Power OK      ");
+                /* Show Mains Power Status*/
+                display.setCursor(17,0);
+                display.write(byte(2));
             }
 
             /* Line 3 - Door Status */

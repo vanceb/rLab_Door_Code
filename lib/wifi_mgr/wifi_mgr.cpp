@@ -608,7 +608,7 @@ void etask_wifi_mgr(void *parameters)
         log_i("Starting config portal:  SSID: %s PASS: %s", ssid, password);
         log_i("%s:%d", "192.168.4.1", HTTP_PORT_TO_USE);
 
-        // Starts an access point
+        // Starts an access point BLOCKING
         if (!ESP_wifiManager.startConfigPortal((const char *)ssid.c_str(), password.c_str()))
             log_e("Unable to start config portal");
 
