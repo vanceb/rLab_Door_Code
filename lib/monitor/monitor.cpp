@@ -452,7 +452,7 @@ void monitorTask(void * pvParameters) {
         if (loop_counter % LOOP_FREQ == 0) {
             /* Line 1 - Alerts */
             display.setCursor(0,0);
-            display.print("   rLab Door");
+            display.print("rLab Door      ");
 
             /* Show WiFi status*/
             display.setCursor(19,0);
@@ -474,19 +474,19 @@ void monitorTask(void * pvParameters) {
             display.setCursor(0,1);
             if (battery_low) {
                 /* Display Power message */
-                display.print("Power Off - Batt Low");
+//                display.print("Power Off - Batt Low");
                 /* Show Batt Low Status*/
                 display.setCursor(17,0);
                 display.write(byte(4));
             } else if (power_lost) {
                 /* Display Power message */
-                display.print("Power Off - Batt OK ");
+//                display.print("Power Off - Batt OK ");
                 /* Show Batt Full Status*/
                 display.setCursor(17,0);
                 display.write(byte(3));
             } else {
                 /* Display Power OK message */
-                display.print("      Power OK      ");
+//                display.print("      Power OK      ");
                 /* Show Mains Power Status*/
                 display.setCursor(17,0);
                 display.write(byte(2));
