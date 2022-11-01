@@ -176,7 +176,7 @@ void check_door_state() {
         open1_state = open1_request;
         open1_changed = millis();
         if (open1_state) {
-            log_i("Door 1 opened by %s", pi_open1 ? "Pi" : "RFID");
+            log_i("Door 1 opened by %s", rfid_open1 ? "RFID" : "Pi");
         } else {
             log_i("Door 1 closed");
         }
@@ -187,7 +187,7 @@ void check_door_state() {
         open2_state = open2_request;
         open2_changed = millis();
         if (open2_state) {
-            log_i("Door 2 opened by %s", pi_open2 ? "Pi" : "RFID");
+            log_i("Door 2 opened by %s", rfid_open2 ? "RFID" : "Pi");
         } else {
             log_i("Door 2 closed");
         }
