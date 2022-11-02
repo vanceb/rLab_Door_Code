@@ -253,40 +253,40 @@ uint8_t check_voltages() {
     v = (float) v_adc / V3_FACTOR;
     log_d("V3:    %0.1fV [%d]", v, v_adc);
     if (v < V3_LOW) {
-        log_w("3.3V supply low: %0.1fV ", v);
+        log_d("3.3V supply low: %0.1fV ", v);
         errors |= ERR_V3_LOW;
     } else if (v > V3_HI) {
-        log_w("3.3V supply high: %0.1fV ", v);
+        log_d("3.3V supply high: %0.1fV ", v);
         errors |= ERR_V3_HI;
     }
     v_adc = analogRead(GPIO_ADC_V5);
     v = (float) v_adc / V5_FACTOR;
     log_d("V5:    %0.1fV [%d]", v, v_adc);
     if (v < V5_LOW) {
-        log_w("5V supply low: %0.1fV ", v);
+        log_d("5V supply low: %0.1fV ", v);
         errors |= ERR_V5_LOW;
     } else if (v > V5_HI) {
-        log_w("5V high: %0.1fV ", v);
+        log_d("5V high: %0.1fV ", v);
         errors |= ERR_V5_HI;
     }
     v_adc = analogRead(GPIO_ADC_VBATT);
     v = ((float) v_adc / VBATT_FACTOR) + 0.5;  // 0.5 accounts for voltage drop across diode
     log_d("VBATT: %0.1fV [%d]", v, v_adc);
     if (v < VBATT_LOW) {
-        log_w("Battery voltage low: %0.1fV ", v);
+        log_d("Battery voltage low: %0.1fV ", v);
         errors |= ERR_VBATT_LOW;
     } else if (v > VBATT_HI) {
-        log_w("Battery voltage high: %0.1fV ", v);
+        log_d("Battery voltage high: %0.1fV ", v);
         errors |= ERR_VBATT_HI;
     }
     v_adc = analogRead(GPIO_ADC_VIN);
     v = ((float) v_adc / VIN_FACTOR) + 0.5;  // 0.5 accounts for voltage drop across diode
     log_d("VIN:   %0.1fV [%d]", v, v_adc);
     if (v < VIN_LOW) {
-        log_w("Input voltage low: %0.1fV ", v);
+        log_d("Input voltage low: %0.1fV ", v);
         errors |= ERR_VIN_LOW;
     } else if (v > VIN_HI) {
-        log_w("Input voltage high: %0.1fV ", v);
+        log_d("Input voltage high: %0.1fV ", v);
         errors |= ERR_VIN_HI;
     }
     #endif  // FEATURE_ADC
