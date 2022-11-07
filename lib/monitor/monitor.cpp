@@ -27,6 +27,12 @@ static unsigned long pi_reject_indicated = 0;
 static bool power_lost = false;
 static bool battery_low = false;
 static bool tamper = false;
+static uint16_t num_open = 0;
+static uint16_t num_reject = 0;
+static uint16_t num_tamper = 0;
+static uint16_t num_power_loss = 0;
+static uint16_t num_pi_fails = 0;
+
 
 #if FEATURE_DISPLAY
 /* Display */
@@ -173,6 +179,7 @@ void check_door_state() {
     #if FEATURE_PI_OPEN2_REJECT
     if (pi_open2) {
         log_w("Card Rejected by Pi - doors locked");
+        num_reject++;
         pi_reject = true;
         pi_reject_indicated = millis() + REJECT_INDICATION;
         pi_open1 = false;  // Reject trumps an open command
@@ -200,6 +207,7 @@ void check_door_state() {
         open1_changed = millis();
         if (open1_state) {
             log_i("Door 1 opened by %s", rfid_open1 ? "RFID" : "Pi");
+            num_open++;
         } else {
             log_i("Door 1 closed");
         }
@@ -304,6 +312,7 @@ void monitorTask(void * pvParameters) {
     int pi_connected_prev = 0;
     int pi_ok = 0;
     int pi_ok_prev = 0;
+    static time_t send_weekly_status = 0;
     
 #if FEATURE_DISPLAY
     setup_i2c_disp();
@@ -357,6 +366,7 @@ void monitorTask(void * pvParameters) {
                 if (pi_ok_prev) {
                     /* Was OK before so alert */
                     log_e("No recent heartbeat from Raspberry Pi - Check the service on the Pi");
+                    num_pi_fails++;
 #if FEATURE_PUSHOVER
                     pushover.send("rLabDoor Pi", "No heartbeat detected from the Pi - Door will not operate", -1);
 #endif  // FEATURE_PUSHOVER
@@ -368,6 +378,7 @@ void monitorTask(void * pvParameters) {
             if (pi_connected_prev) {
                 /* We have seen it up a moment ago */
                 log_e("Can't detect Raspberry Pi any more");
+                num_pi_fails++;
 #if FEATURE_PUSHOVER
                 pushover.send("rLabDoor Pi", "Raspberry Pi connection physical lost", -1);
 #endif  // FEATURE_PUSHOVER
@@ -393,6 +404,7 @@ void monitorTask(void * pvParameters) {
                 /* This has just happened */
                 tamper = true;
                 log_w("TAMPER - The enclosure is open!");
+                num_tamper++;
 #if FEATURE_PUSHOVER
                 pushover.send("rLabDoor Tamper!", "The rLabDoor enclosure has been opened", 0);
 #endif  // FEATURE_PUSHOVER
@@ -420,6 +432,7 @@ void monitorTask(void * pvParameters) {
                     if ((errors & ERR_VIN_LOW) && !power_lost) {
                         power_lost = true;
                         log_e("Input power lost or low");
+                        num_power_loss++;
     #if FEATURE_PUSHOVER
                         pushover.send("rLabDoor Power!", "Input power lost", 1);
     #endif  // FEATURE_PUSHOVER
@@ -445,6 +458,54 @@ void monitorTask(void * pvParameters) {
             }
         }
 
+#if FEATURE_PUSHOVER
+        /* Set the time to send the weekly status report */
+        /* 08:00:00 on Sunday morning */
+        time_t now;
+        struct tm timeinfo;
+        int days_away;
+        getLocalTime(&timeinfo);
+        now = mktime(&timeinfo);
+        if (timeinfo.tm_year > 100 && send_weekly_status == 0) {  // The clock has been set and we have just booted
+            timeinfo.tm_hour = 8;
+            timeinfo.tm_min = 0;
+            timeinfo.tm_sec = 0;
+            days_away = 7 - timeinfo.tm_wday;
+            send_weekly_status = mktime(&timeinfo) + days_away*24*60*60;
+            if (now > send_weekly_status) {
+                send_weekly_status += 7*24*60*60;
+            }
+            log_i("Status report will be sent %s", asctime(localtime(&send_weekly_status)));
+        }
+
+        /* Check whether we should send the weekly status report */
+        getLocalTime(&timeinfo);
+        now = mktime(&timeinfo);
+        if (send_weekly_status && now > send_weekly_status) {
+            /* We should send the report */
+            char msg[PUSHOVER_MAX_BODY_LEN];
+            snprintf(msg, PUSHOVER_MAX_PAYLOAD_LEN, "Up: %d days, %d hours\nDoor Open: %d\nCard Reject: %d\nPi Fails: %d\nPower Loss: %d\nTamper: %d", 
+                    uptime::getDays, 
+                    uptime::getHours, 
+                    num_reject, 
+                    num_pi_fails, 
+                    num_power_loss, 
+                    num_tamper);
+            pushover.send("rLabDoor weekly status", msg, -1);
+
+            /* Reset the counters and the next status time */
+            num_open = 0;
+            num_reject = 0;
+            num_pi_fails = 0;
+            num_power_loss = 0;
+            num_tamper = 0;
+            timeinfo.tm_hour = 8;
+            timeinfo.tm_min = 0;
+            timeinfo.tm_sec = 0;
+            send_weekly_status = mktime(&timeinfo) + 7*24*60*60;
+            log_i("Next status report will be sent %s", asctime(localtime(&send_weekly_status)));
+        }
+#endif  // FEATURE_PUSHOVER
 
 #if FEATURE_NEOPIXELS
         /* Neopixels */
