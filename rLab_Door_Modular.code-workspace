@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../rLab_Door.wiki"
 		}
 	],
 	"settings": {}
