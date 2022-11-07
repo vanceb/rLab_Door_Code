@@ -557,53 +557,51 @@ void monitorTask(void * pvParameters) {
 
 
 #if FEATURE_PUSHOVER
-        if (millis() > 30000) {   // Give it chance to boot otherwise getLocalTime stalls the display updates
-            /* Set the time to send the weekly status report */
-            /* 08:00:00 on Sunday morning */
-            time_t now;
-            struct tm timeinfo;
-            int days_away;
-            getLocalTime(&timeinfo);
-            now = mktime(&timeinfo);
-            if (timeinfo.tm_year > 100 && send_weekly_status == 0) {  // The clock has been set and we have just booted
-                timeinfo.tm_hour = 8;
-                timeinfo.tm_min = 0;
-                timeinfo.tm_sec = 0;
-                days_away = 7 - timeinfo.tm_wday;
-                send_weekly_status = mktime(&timeinfo) + days_away*24*60*60;
-                if (now > send_weekly_status) {
-                    send_weekly_status += 7*24*60*60;
-                }
-                log_i("Status report will be sent %s", asctime(localtime(&send_weekly_status)));
+        /* Set the time to send the weekly status report */
+        /* 08:00:00 on Sunday morning */
+        time_t now;
+        struct tm timeinfo;
+        int days_away;
+        getLocalTime(&timeinfo, 1);
+        now = mktime(&timeinfo);
+        if (timeinfo.tm_year > 100 && send_weekly_status == 0) {  // The clock has been set and we have just booted
+            timeinfo.tm_hour = 8;
+            timeinfo.tm_min = 0;
+            timeinfo.tm_sec = 0;
+            days_away = 7 - timeinfo.tm_wday;
+            send_weekly_status = mktime(&timeinfo) + days_away*24*60*60;
+            if (now > send_weekly_status) {
+                send_weekly_status += 7*24*60*60;
             }
+            log_i("Status report will be sent %s", asctime(localtime(&send_weekly_status)));
+        }
 
-            /* Check whether we should send the weekly status report */
-            getLocalTime(&timeinfo);
-            now = mktime(&timeinfo);
-            if (send_weekly_status && now > send_weekly_status) {
-                // We should send the report
-                char msg[PUSHOVER_MAX_BODY_LEN];
-                snprintf(msg, PUSHOVER_MAX_PAYLOAD_LEN, "Up: %d days, %d hours\nDoor Open: %d\nCard Reject: %d\nPi Fails: %d\nPower Loss: %d\nTamper: %d", 
-                        uptime::getDays, 
-                        uptime::getHours, 
-                        num_reject, 
-                        num_pi_fails, 
-                        num_power_loss, 
-                        num_tamper);
-                pushover.send("rLabDoor weekly status", msg, -1);
+        /* Check whether we should send the weekly status report */
+        getLocalTime(&timeinfo, 1);
+        now = mktime(&timeinfo);
+        if (send_weekly_status && now > send_weekly_status) {
+            // We should send the report
+            char msg[PUSHOVER_MAX_BODY_LEN];
+            snprintf(msg, PUSHOVER_MAX_PAYLOAD_LEN, "Up: %d days, %d hours\nDoor Open: %d\nCard Reject: %d\nPi Fails: %d\nPower Loss: %d\nTamper: %d", 
+                    uptime::getDays, 
+                    uptime::getHours, 
+                    num_reject, 
+                    num_pi_fails, 
+                    num_power_loss, 
+                    num_tamper);
+            pushover.send("rLabDoor weekly status", msg, -1);
 
-                // Reset the counters and the next status time
-                num_open = 0;
-                num_reject = 0;
-                num_pi_fails = 0;
-                num_power_loss = 0;
-                num_tamper = 0;
-                timeinfo.tm_hour = 8;
-                timeinfo.tm_min = 0;
-                timeinfo.tm_sec = 0;
-                send_weekly_status = mktime(&timeinfo) + 7*24*60*60;
-                log_i("Next status report will be sent %s", asctime(localtime(&send_weekly_status)));
-            }
+            // Reset the counters and the next status time
+            num_open = 0;
+            num_reject = 0;
+            num_pi_fails = 0;
+            num_power_loss = 0;
+            num_tamper = 0;
+            timeinfo.tm_hour = 8;
+            timeinfo.tm_min = 0;
+            timeinfo.tm_sec = 0;
+            send_weekly_status = mktime(&timeinfo) + 7*24*60*60;
+            log_i("Next status report will be sent %s", asctime(localtime(&send_weekly_status)));
         }
 #endif  // FEATURE_PUSHOVER
 
