@@ -211,7 +211,8 @@ void printLocalTime()
 {
     struct tm timeinfo;
 
-    getLocalTime(&timeinfo, 1);
+    getLocalTime(&timeinfo, NTP_TIMEOUT_MS);
+    //getLocalTime(&timeinfo, 1);
 
     // Valid only if year > 2000.
     // You can get from timeinfo : tm_year, tm_mon, tm_mday, tm_hour, tm_min, tm_sec

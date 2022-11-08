@@ -4,6 +4,7 @@
 #include <monitor.h>
 #include <hardware.h>
 #include <pushover.h>
+#include <rfid.h>
 
 #if FEATURE_WIFI
 #include <WiFi.h>
@@ -13,9 +14,6 @@
 #include <pi_control.h>
 #endif  // FEATURE_PI
 
-#if FEATURE_NFC
-#include <rfid.h>
-#endif  // FEATURE_NFC
 
 /* Global state variables */
 static bool open1_state = true;
@@ -562,7 +560,8 @@ void monitorTask(void * pvParameters) {
         time_t now;
         struct tm timeinfo;
         int days_away;
-        getLocalTime(&timeinfo, 1);
+        getLocalTime(&timeinfo, NTP_TIMEOUT_MS);
+        //getLocalTime(&timeinfo, 1);
         now = mktime(&timeinfo);
         if (timeinfo.tm_year > 100 && send_weekly_status == 0) {  // The clock has been set and we have just booted
             timeinfo.tm_hour = 8;
@@ -577,7 +576,8 @@ void monitorTask(void * pvParameters) {
         }
 
         /* Check whether we should send the weekly status report */
-        getLocalTime(&timeinfo, 1);
+        getLocalTime(&timeinfo, NTP_TIMEOUT_MS);
+        //getLocalTime(&timeinfo, 1);
         now = mktime(&timeinfo);
         if (send_weekly_status && now > send_weekly_status) {
             // We should send the report

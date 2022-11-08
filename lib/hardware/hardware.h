@@ -8,7 +8,7 @@
 #define FEATURE_PI          1   // Enable control by Pi (GPIO)
 #define FEATURE_PI_SERIAL   0   // Enable serial communication with Pi (Not Implemented)
 #define FEATURE_PI_OPEN2_REJECT 1  // Enable the pi_open2 connmnd to be interpreted as a card read failure
-#define FEATURE_NFC         1   // Enable NFC card reader using PN532 (Not Implemented)
+#define FEATURE_NFC         0   // Enable NFC card reader using PN532 (Not Implemented)
 #define FEATURE_TAMPER      1   // Enable tamper detection
 #define FEATURE_ADC         1   // Enable voltage monitoring using the ADC
 #define FEATURE_NEOPIXELS   1   // Enable neopixel display
@@ -92,6 +92,7 @@
 #if FEATURE_WIFI
 #define WIFI_SSID_MAX_LEN   32
 #define WIFI_PASSWD_MAX_LEN 64
+#define NTP_TIMEOUT_MS      1       // used to timeout getLocalTime, which hangs if no internet connection
 #endif
 
 void setup_gpio();

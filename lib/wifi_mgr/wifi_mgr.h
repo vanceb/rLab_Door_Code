@@ -18,7 +18,7 @@
 //From v1.0.10, WPA2 passwords can be up to 63 characters long.
 #define PASS_MAX_LEN            64
 
-#define NUM_WIFI_CREDENTIALS    1
+#define NUM_WIFI_CREDENTIALS    2
 
 // Assuming max 490 chars
 #define TZNAME_MAX_LEN          50
