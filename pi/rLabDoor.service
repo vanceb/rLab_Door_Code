@@ -1,0 +1,16 @@
+[Unit]
+Description=A rLab Door Pi Simulator
+After=network.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+User=vance
+WorkingDirectory=/home/vance/rLabDoor/
+ExecStart=/usr/bin/python3 heartbeat.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+
