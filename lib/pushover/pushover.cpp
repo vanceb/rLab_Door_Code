@@ -12,6 +12,7 @@ Pushover pushover;
 
 Pushover::Pushover()
 {
+    configured = false;
 }
 
 Pushover::~Pushover()
@@ -108,16 +109,23 @@ int Pushover::_send_to_api(const char *title, const char *msg, int priority)
 
 int Pushover::send(const char *title, const char *body, int priority)
 {
-    Message msg;
-    strlcpy(msg.title, title, PUSHOVER_MAX_TITLE_LEN);
-    strlcpy(msg.body, body, PUSHOVER_MAX_BODY_LEN);
-    msg.priority = priority;
-    return xQueueSendToBack(this->msg_queue, &msg, 1);
+    if(configured) {
+        Message msg;
+        strlcpy(msg.title, title, PUSHOVER_MAX_TITLE_LEN);
+        strlcpy(msg.body, body, PUSHOVER_MAX_BODY_LEN);
+        msg.priority = priority;
+        return xQueueSendToBack(this->msg_queue, &msg, 1);
+    } else {
+        return -1;
+    }
 }
 
 int Pushover::send(Message *msg)
 {
-    return xQueueSendToBack(this->msg_queue, msg, 1);
+    if(configured) {
+        return xQueueSendToBack(this->msg_queue, msg, 1);
+    }
+    return -1;
 }
 
 int Pushover::process_queue() {

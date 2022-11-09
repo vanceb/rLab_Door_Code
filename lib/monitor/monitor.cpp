@@ -310,6 +310,7 @@ void monitorTask(void * pvParameters) {
     int pi_connected_prev = 0;
     int pi_ok = 0;
     int pi_ok_prev = 0;
+    bool no_pi = false;
     static time_t send_weekly_status = 0;
     
 #if FEATURE_DISPLAY
@@ -380,8 +381,9 @@ void monitorTask(void * pvParameters) {
 #if FEATURE_PUSHOVER
                 pushover.send("rLabDoor Pi", "Raspberry Pi connection physical lost", -1);
 #endif  // FEATURE_PUSHOVER
-            } else {
+            } else if(!no_pi) {
                 log_e("No Raspberry Pi detected on startup");
+                no_pi = true;
 #if FEATURE_PUSHOVER
                 pushover.send("rLabDoor Pi", "Raspberry Pi physical connection not detected", -1);
 #endif  // FEATURE_PUSHOVER
