@@ -584,9 +584,10 @@ void monitorTask(void * pvParameters) {
         if (send_weekly_status && now > send_weekly_status) {
             // We should send the report
             char msg[PUSHOVER_MAX_BODY_LEN];
-            snprintf(msg, PUSHOVER_MAX_PAYLOAD_LEN, "Up: %d days, %d hours\nDoor Open: %d\nCard Reject: %d\nPi Fails: %d\nPower Loss: %d\nTamper: %d", 
-                    uptime::getDays, 
-                    uptime::getHours, 
+            snprintf(msg, PUSHOVER_MAX_PAYLOAD_LEN, "Up: %d days, %d hours\nDoor Open: %u\nCard Reject: %u\nPi Fails: %u\nPower Loss: %u\nTamper: %u", 
+                    uptime::getDays(), 
+                    uptime::getHours(), 
+                    num_open,
                     num_reject, 
                     num_pi_fails, 
                     num_power_loss, 
