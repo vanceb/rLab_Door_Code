@@ -308,6 +308,7 @@ void monitorTask(void * pvParameters) {
     uint8_t prev_errors = 0;
     int pi_connected = 0;
     int pi_connected_prev = 0;
+    bool pi_good = false;
     int pi_ok = 0;
     int pi_ok_prev = 0;
     bool no_pi = false;
@@ -347,48 +348,42 @@ void monitorTask(void * pvParameters) {
         /* Check that the Pi is alive */
         pi_connected = rpi.is_connected();
         pi_ok        = rpi.is_alive();
-        if (pi_connected) {
-            /* We can see the physical connection */
-            if (pi_ok) {
-                no_pi = false;
-                /* All good! */
-                if (!pi_ok_prev) {
-                    /* Heartbeat just come up */
-                    log_i("Raspberry Pi detected with heartbeat, all OK");
+
+        if(pi_connected) {
+            /* Physical connection with the Pi */
+            if(pi_ok) {
+                /* This is the expected working state */
+                if(!pi_good) {
+                    /* It has just come up so notify */
+                    log_i("Pi service detected - Door operation OK");
 #if FEATURE_PUSHOVER
-                    pushover.send("rLabDoor Pi", "The rLabDoor Pi service detected. Pi door control is enabled", -1);
-#endif  // FEATURE_PUSHOVER
-                } else {
-                    /*Been good for a while, nothing to say */
+                    pushover.send("rLabDoor Pi", "Pi service detected - Door operation OK", -1);
+#endif
                 }
+                pi_good = true;
             } else {
-                /* No recent heartbeat from the Raspberry Pi */
-                if (pi_ok_prev) {
-                    /* Was OK before so alert */
-                    log_e("No recent heartbeat from Raspberry Pi - Check the service on the Pi");
+                /* The service is down */
+                if(pi_good) {
+                    /* It has just gone down, so notify */
+                    log_e("Pi service is down - Door non-operational");
+#if FEATURE_PUSHOVER
+                    pushover.send("rLabDoor Pi", "Pi Service is down - Door non-operational", 1);
+#endif
                     num_pi_fails++;
-#if FEATURE_PUSHOVER
-                    pushover.send("rLabDoor Pi", "No heartbeat detected from the Pi - Door will not operate", -1);
-#endif  // FEATURE_PUSHOVER
-                } else {
-                    /* Startup or not seen in a while, stay silent */
                 }
+                pi_good = false;
             }
-        } else if (!no_pi) {
-            no_pi = true;
-            if (pi_connected_prev) {
-                /* We have seen it up a moment ago */
-                log_e("Can't detect Raspberry Pi any more");
+        } else {
+            /* Pi not connected */
+            if(pi_good) {
+                /* It has just gone down so notify */
+                log_e("Pi not connected - Door non-operational");
+#if FEATURE_PUSHOVER
+                pushover.send("rLabDoor Pi", "Pi non connected - Door non-operational", 1);
+#endif
                 num_pi_fails++;
-#if FEATURE_PUSHOVER
-                pushover.send("rLabDoor Pi", "Raspberry Pi connection physical lost", -1);
-#endif  // FEATURE_PUSHOVER
-            } else if(!no_pi) {
-                log_e("No Raspberry Pi detected on startup");
-#if FEATURE_PUSHOVER
-                pushover.send("rLabDoor Pi", "Raspberry Pi physical connection not detected", -1);
-#endif  // FEATURE_PUSHOVER
             }
+            pi_good = false;
         }
 
         pi_ok_prev = pi_ok;
