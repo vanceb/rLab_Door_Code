@@ -44,11 +44,13 @@ void Pi::begin(
     _open1_pin      = open1_pin;
     _open2_pin      = open2_pin;
 
-    /* Attach the interrupts */
-    pinMode(_powered_pin,   INPUT);
-    pinMode(_heartbeat_pin, INPUT);
-    pinMode(_open1_pin,     INPUT);
-    pinMode(_open2_pin,     INPUT);
+    /* Attach the interrupts
+       INPUT_PULLDOWN to stop floating inputs
+     */
+    pinMode(_powered_pin,   INPUT_PULLDOWN);
+    pinMode(_heartbeat_pin, INPUT_PULLDOWN);
+    pinMode(_open1_pin,     INPUT_PULLDOWN);
+    pinMode(_open2_pin,     INPUT_PULLDOWN);
     attachInterrupt(_heartbeat_pin, Pi_Heartbeat_ISR, RISING);
     attachInterrupt(_open1_pin, PiOpen1_ISR, CHANGE);
     attachInterrupt(_open2_pin, PiOpen2_ISR, CHANGE);
