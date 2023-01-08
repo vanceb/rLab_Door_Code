@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define MAX_HEARTBEAT_DELAY     (10000)  // milliseconds
+#define MAX_HEARTBEAT_DELAY     (60000)  // milliseconds
 #define OPEN_QUEUE_LEN          (5)
 
 extern volatile bool pi_open1;
